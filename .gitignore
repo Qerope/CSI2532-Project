@@ -1,0 +1,121 @@
+# Ignore all .DS_Store files in all subdirectories
+**/.DS_Store
+.DS_Store
+
+# Node.js
+node_modules/
+npm-debug.log
+yarn-error.log
+pnpm-lock.yaml
+package-lock.json
+*.tgz
+
+# Logs
+logs/
+*.log
+*.log.*
+
+# Build output
+dist/
+build/
+.next/
+out/
+coverage/
+*.tsbuildinfo
+
+# Dependency directories
+bower_components/
+jspm_packages/
+
+# TypeScript
+*.tsbuildinfo
+*.d.ts
+*.js.map
+*.ts.map
+
+# Next.js
+.next/
+out/
+
+# React Native
+.expo/
+.expo-shared/
+node_modules/
+npm-debug.log
+
+# IDE / Editor specific
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+*.vscode/*
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Environment files
+.env
+.env.*
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.example
+
+# TypeScript
+tsconfig.json
+tsconfig.build.json
+tsconfig.paths.json
+tsconfig.prod.json
+tsconfig.test.json
+
+# Build cache
+.cache/
+.cache-loader/
+
+# Next.js specific build folders
+.next/
+out/
+
+# Temporary files
+*.bak
+*.swp
+*~
+*~
+
+# Firebase
+.firebase/
+
+# Storybook build folder
+storybook-static/
+
+# ESLint
+.eslintcache
+
+# Prettier
+.prettier
+
+# React Testing Library
+coverage/
+
+# Logs and error handling
+*.log
+npm-debug.log*
+
+# Yarn
+yarn-debug.log
+yarn-error.log
+
+# NPM package and lock files
+package-lock.json
+yarn.lock
+.pnpm-lock.yaml
+
+# Svelte
+.svelte-kit/
+
+# Other potential build directories
+build/
+tmp/
+temp/

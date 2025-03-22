@@ -1,0 +1,192 @@
+digraph ER_Diagram {
+    rankdir=LR;
+    graph [splines=polyline];
+
+    // Entity Nodes
+    node [shape=box, style=filled, fillcolor=lightblue, fontname="Arial"];
+    HotelChain [label="HotelChain"];
+    Hotel [label="Hotel"];
+    Room [label="Room (Weak Entity)"];
+    Guest [label="Guest"];
+    Employee [label="Employee"];
+    Reservation [label="Reservation"];
+    Rental [label="Rental"];
+    Archived_Records [label="Archived_Records (Weak Entity)"];
+    Payment [label="Payment"];
+
+    // Relationship Nodes
+    node [shape=diamond, style=filled, fillcolor=lightgray, fontname="Arial"];
+    Owns [label="Owns\n1:N"];
+    HasRoom [label="Has\n1:N (Total)"];
+    Books [label="Books\n1:N"];
+    Rents [label="Rents\n1:N"];
+    WorksAt [label="WorksAt\n1:N (Total Participation)"];
+    ManagedBy [label="ManagedBy\n1:1"];
+    Archived [label="Archived\n1:N"];
+    Pays [label="Pays\n1:1"];
+
+    // Attributes
+    node [shape=ellipse, style=filled, fillcolor=white, fontname="Arial"];
+
+    // HotelChain Attributes
+    chain_id [label="chain_id (PK)"];
+    chain_name [label="name"];
+    central_address [label="central_address"];
+    num_hotels [label="num_hotels (Derived)"];
+    contact_email [label="contact_email"];
+    telephone [label="telephone"];
+
+    HotelChain -> chain_id;
+    HotelChain -> chain_name;
+    HotelChain -> central_address;
+    HotelChain -> num_hotels;
+    HotelChain -> contact_email;
+    HotelChain -> telephone;
+
+    // Hotel Attributes
+    hotel_id [label="hotel_id (PK)"];
+    chain_id_fk [label="chain_id (FK)"];
+    hotel_name [label="name"];
+    classification [label="classification"];
+    num_rooms [label="num_rooms (Derived)"];
+    hotel_address [label="address"];
+    hotel_contact_email [label="contact_email"];
+    hotel_telephone [label="telephone"];
+
+    Hotel -> hotel_id;
+    Hotel -> chain_id_fk;
+    Hotel -> hotel_name;
+    Hotel -> classification;
+    Hotel -> num_rooms;
+    Hotel -> hotel_address;
+    Hotel -> hotel_contact_email;
+    Hotel -> hotel_telephone;
+
+    // Room (Weak Entity) Attributes
+    room_id [label="room_id (PK, Partial Key)"];
+    hotel_id_fk [label="hotel_id (FK)"];
+    price [label="price"];
+    capacity [label="capacity"];
+    view [label="view"];
+    extendable [label="extendable"];
+    condition [label="condition"];
+    amenities [label="amenities"];
+
+    Room -> room_id;
+    Room -> hotel_id_fk;
+    Room -> price;
+    Room -> capacity;
+    Room -> view;
+    Room -> extendable;
+    Room -> condition;
+    Room -> amenities;
+
+    // Guest Attributes
+    guest_id [label="guest_id (PK)"];
+    guest_name [label="full_name"];
+    guest_address [label="address"];
+    SIN [label="SIN"];
+    date_of_checkin [label="date_of_checkin"];
+
+    Guest -> guest_id;
+    Guest -> guest_name;
+    Guest -> guest_address;
+    Guest -> SIN;
+    Guest -> date_of_checkin;
+
+    // Employee Attributes
+    employee_id [label="employee_id (PK)"];
+    hotel_id_fk_emp [label="hotel_id (FK)"];
+    emp_name [label="full_name"];
+    emp_address [label="address"];
+    emp_SIN [label="SIN"];
+    role [label="role"];
+
+    Employee -> employee_id;
+    Employee -> hotel_id_fk_emp;
+    Employee -> emp_name;
+    Employee -> emp_address;
+    Employee -> emp_SIN;
+    Employee -> role;
+
+    // Reservation Attributes
+    reservation_id [label="reservation_id (PK)"];
+    guest_id_fk [label="guest_id (FK)"];
+    room_id_fk [label="room_id (FK)"];
+    start_date [label="start_date"];
+    end_date [label="end_date"];
+    status [label="status"];
+
+    Reservation -> reservation_id;
+    Reservation -> guest_id_fk;
+    Reservation -> room_id_fk;
+    Reservation -> start_date;
+    Reservation -> end_date;
+    Reservation -> status;
+
+    // Rental Attributes
+    rental_id [label="rental_id (PK)"];
+    reservation_id_fk [label="reservation_id (FK)"];
+    guest_id_fk_rental [label="guest_id (FK)"];
+    room_id_fk_rental [label="room_id (FK)"];
+    employee_id_fk [label="employee_id (FK)"];
+    checkin_date [label="checkin_date"];
+    checkout_date [label="checkout_date"];
+
+    Rental -> rental_id;
+    Rental -> reservation_id_fk;
+    Rental -> guest_id_fk_rental;
+    Rental -> room_id_fk_rental;
+    Rental -> employee_id_fk;
+    Rental -> checkin_date;
+    Rental -> checkout_date;
+
+    // Archived Records (Weak Entity) Attributes
+    record_id [label="record_id (PK)"];
+    original_id [label="original_id (FK)"];
+    type [label="type"];
+    data_snapshot [label="data_snapshot"];
+    archived_at [label="archived_at"];
+
+    Archived_Records -> record_id;
+    Archived_Records -> original_id;
+    Archived_Records -> type;
+    Archived_Records -> data_snapshot;
+    Archived_Records -> archived_at;
+
+    // Payment Attributes
+    payment_id [label="payment_id (PK)"];
+    rental_id_fk [label="rental_id (FK)"];
+    amount [label="amount"];
+    payment_method [label="payment_method"];
+    payment_date [label="payment_date"];
+
+    Payment -> payment_id;
+    Payment -> rental_id_fk;
+    Payment -> amount;
+    Payment -> payment_method;
+    Payment -> payment_date;
+
+    // Relationships with Cardinalities
+    HotelChain -> Owns -> Hotel;
+    Hotel -> HasRoom -> Room;
+    Guest -> Books -> Reservation;
+    Guest -> Rents -> Rental;
+    Employee -> WorksAt -> Hotel;
+    Employee -> ManagedBy -> Hotel;
+    Reservation -> Archived -> Archived_Records;
+    Rental -> Archived -> Archived_Records;
+    Rental -> Pays -> Payment;
+
+    // Relationship Constraints
+    edge [labeldistance=1.5, labelangle=45, fontsize=12];
+
+    Owns -> Hotel [label="1:N"];
+    HasRoom -> Room [label="1:N"];
+    Books -> Reservation [label="1:N"];
+    Rents -> Rental [label="1:N"];
+    WorksAt -> Employee [label="1:N (Total)"];
+    ManagedBy -> Employee [label="1:1"];
+    Archived -> Archived_Records [label="1:N"];
+    Pays -> Payment [label="1:N"];
+}

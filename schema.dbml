@@ -1,0 +1,82 @@
+Table HotelChain {
+    chain_id integer [primary key]
+    name varchar(255) [not null]
+    central_address varchar(255) [not null]
+    num_hotels integer [not null, note: "Derived"]
+    contact_email varchar(255) [not null, unique]
+    telephone varchar(20) [not null]
+}
+
+Table Hotel {
+    hotel_id integer [primary key]
+    chain_id integer [not null, ref: > HotelChain.chain_id]
+    name varchar(255) [not null]
+    classification integer [not null, note: "1 to 5-star classification"]
+    num_rooms integer [not null, note: "Derived"]
+    address varchar(255) [not null]
+    contact_email varchar(255) [not null, unique]
+    telephone varchar(20) [not null]
+}
+
+Table Room {
+    room_id integer [primary key]
+    hotel_id integer [not null, ref: > Hotel.hotel_id]
+    price decimal(10,2) [not null]
+    capacity integer [not null]
+    view varchar(50) [not null]
+    extendable boolean [not null]
+    condition text [not null]
+    amenities text [not null]
+}
+
+Table Guest {
+    guest_id integer [primary key]
+    full_name varchar(255) [not null]
+    address varchar(255) [not null]
+    SIN varchar(20) [not null, unique]
+    date_of_checkin date [not null]
+}
+
+Table Employee {
+    employee_id integer [primary key]
+    hotel_id integer [not null, ref: > Hotel.hotel_id]
+    full_name varchar(255) [not null]
+    address varchar(255) [not null]
+    SIN varchar(20) [not null, unique]
+    role varchar(100) [not null]
+}
+
+Table Reservation {
+    reservation_id integer [primary key]
+    guest_id integer [not null, ref: > Guest.guest_id]
+    room_id integer [not null, ref: > Room.room_id]
+    start_date date [not null]
+    end_date date [not null]
+    status varchar(50) [not null, note: "Pending, Confirmed, Canceled"]
+}
+
+Table Rental {
+    rental_id integer [primary key]
+    reservation_id integer [not null, ref: > Reservation.reservation_id]
+    guest_id integer [not null, ref: > Guest.guest_id]
+    room_id integer [not null, ref: > Room.room_id]
+    employee_id integer [not null, ref: > Employee.employee_id]
+    checkin_date date [not null]
+    checkout_date date [not null]
+}
+
+Table Archived_Records {
+    record_id integer [primary key]
+    original_id integer [not null, note: "References old reservation/rental"]
+    type varchar(50) [not null, note: "Reservation or Rental"]
+    data_snapshot text [not null]
+    archived_at timestamp [not null]
+}
+
+Table Payment {
+    payment_id integer [primary key]
+    rental_id integer [not null, ref: > Rental.rental_id]
+    amount decimal(10,2) [not null]
+    payment_method varchar(50) [not null]
+    payment_date timestamp [not null]
+}
