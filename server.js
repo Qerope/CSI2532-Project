@@ -2,40 +2,109 @@ const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const { Client } = require('pg');
+const sqlLogger = require("./middleware/sql-logger")
 require('dotenv').config();
 
 const app = express();
 const client = new Client({
-    connectionString: process.env.DATABASE_URL,
+    connectionString: process.env.DATABASE_URL || "postgres://root@localhost:5432/hotel",
 });
 
 client.connect();
 
-app.use(cors());
+app.use(cors({
+    exposedHeaders: ['X-Sql-Queries', 'Content-Type']
+}));
 app.use(bodyParser.json());
+
+app.use(sqlLogger(client))
+
+app.use((req, res, next) => {
+    const originalQuery = client.query
+    client.query = function (...args) {
+        const query = args[0]
+        const params = args.length > 1 && Array.isArray(args[1]) ? args[1] : []
+
+        return originalQuery.apply(this, args).then((result) => {
+            res.locals._sql = {
+                query: typeof query === "string" ? query : query.text,
+                params: params,
+            };
+            return result;
+        });
+
+    }
+
+    next()
+})
 
 // Endpoint to search for available rooms
 app.get('/api/rooms', async (req, res) => {
     try {
-        const { start_date, end_date, capacity, price, hotel_chain } = req.query;
-        let query = `SELECT Room.*, Hotel.name AS hotel_name FROM Room
-                     JOIN Hotel ON Room.hotel_id = Hotel.hotel_id
-                     WHERE Room.price <= $1 AND Room.capacity >= $2`;
-        const queryParams = [price || 2147483647, capacity || 1];
+        const { start_date, end_date, capacity, price, hotel_chain, view, condition, extendable, amenities } = req.query;
+
+        let query = `SELECT Room.*, 
+                    Hotel.name AS hotel_name, 
+                    Hotel.classification AS hotel_classification, 
+                    HotelChain.name AS chain_name 
+             FROM Room
+             JOIN Hotel ON Room.hotel_id = Hotel.hotel_id
+             LEFT JOIN HotelChain ON Hotel.chain_id = HotelChain.chain_id
+             WHERE 1=1`;
+
+        const queryParams = [];
+        let paramIndex = 1;
+
+        if (price) {
+            query += ` AND Room.price <= $${paramIndex}`;
+            queryParams.push(price);
+            paramIndex++;
+        }
+
+        if (capacity) {
+            query += ` AND Room.capacity >= $${paramIndex}`;
+            queryParams.push(capacity);
+            paramIndex++;
+        }
+
+        if (view && view !== "any") {
+            query += ` AND Room.view = $${paramIndex}`;
+            queryParams.push(view);
+            paramIndex++;
+        }
+
+        if (condition && condition !== "any") {
+            query += ` AND Room.condition = $${paramIndex}`;
+            queryParams.push(condition);
+            paramIndex++;
+        }
+
+        if (extendable !== undefined) {
+            query += ` AND Room.extendable = $${paramIndex}`;
+            queryParams.push(extendable === 'true');
+            paramIndex++;
+        }
+
+        if (amenities) {
+            query += ` AND Room.amenities ILIKE $${paramIndex}`;
+            queryParams.push(`%${amenities}%`);
+            paramIndex++;
+        }
 
         if (start_date && end_date) {
-            if (hotel_chain) {
-                query += ` AND Hotel.chain_id = $3`;
-                queryParams.push(hotel_chain);
-                query += ` AND Room.room_id NOT IN (SELECT room_id FROM Reservation WHERE 
-                          (start_date <= to_TIMESTAMP($4,'YYYY-MM-DD') AND end_date >= to_TIMESTAMP($5,'YYYY-MM-DD')) OR
-                          (start_date <= to_TIMESTAMP($6,'YYYY-MM-DD') AND end_date >= to_TIMESTAMP($7,'YYYY-MM-DD')))`;
-                queryParams.push(start_date, end_date, start_date, end_date);
-            }
-            query += ` AND Room.room_id NOT IN (SELECT room_id FROM Reservation WHERE 
-                      (start_date <= to_TIMESTAMP($3,'YYYY-MM-DD') AND end_date >= to_TIMESTAMP($4,'YYYY-MM-DD')) OR
-                      (start_date <= to_TIMESTAMP($5,'YYYY-MM-DD') AND end_date >= to_TIMESTAMP($6,'YYYY-MM-DD')))`;
+            query += ` AND Room.room_id NOT IN (
+                        SELECT room_id FROM Reservation WHERE 
+                        (start_date <= to_TIMESTAMP($${paramIndex}, 'YYYY-MM-DD') AND end_date >= to_TIMESTAMP($${paramIndex + 1}, 'YYYY-MM-DD'))
+                        OR
+                        (start_date <= to_TIMESTAMP($${paramIndex + 2}, 'YYYY-MM-DD') AND end_date >= to_TIMESTAMP($${paramIndex + 3}, 'YYYY-MM-DD'))
+                     )`;
             queryParams.push(start_date, end_date, start_date, end_date);
+            paramIndex += 4;
+        }
+
+        if (hotel_chain) {
+            query += ` AND Hotel.chain_id = $${paramIndex}`;
+            queryParams.push(hotel_chain);
         }
 
         const result = await client.query(query, queryParams);
@@ -468,7 +537,7 @@ app.get('/api/views/availability', async (req, res) => {
             return res.status(400).json({ error: 'Both start_date and end_date are required' });
         }
 
-        const query = `
+        /* const query = `
             SELECT view, COUNT(*) AS available_rooms
             FROM Room
             WHERE room_id NOT IN (
@@ -478,14 +547,13 @@ app.get('/api/views/availability', async (req, res) => {
                 OR (start_date <= to_TIMESTAMP($3, 'YYYY-MM-DD') AND end_date >= to_TIMESTAMP($4, 'YYYY-MM-DD'))
             )
             GROUP BY view;
-        `;
+        `; */
 
-        const result = await client.query(query, [start_date, end_date, start_date, end_date]);
+        const query = 'SELECT * FROM Available_Rooms_By_Area';
 
-        const availability = result.rows.map(row => ({
-            area: row.view,
-            available_rooms: parseInt(row.available_rooms),
-        }));
+        const result = await client.query(query);
+
+        const availability = result.rows;
 
         res.json(availability);
     } catch (err) {
@@ -503,12 +571,17 @@ app.get('/api/views/capacity', async (req, res) => {
         }
 
         // Query to get the count of rooms for each capacity in the given hotel
-        const query = `
+        /* const query = `
             SELECT capacity, COUNT(*) AS count
             FROM Room
             WHERE hotel_id = $1
             GROUP BY capacity
             ORDER BY capacity;
+        `; */
+
+        const query = `
+            SELECT * FROM Room_Capacity_By_Hotel
+            WHERE hotel_id = $1
         `;
 
         const result = await client.query(query, [hotel_id]);
@@ -571,15 +644,77 @@ app.get('/api/payments', async (req, res) => {
             JOIN 
                 Guest guest ON rental.guest_id = guest.guest_id
         `;
-        
+
         // Execute the query and fetch the results
         const result = await client.query(query);
-        
+
         // Send the result as a JSON response
         res.status(200).json(result.rows);
     } catch (err) {
         console.error(err);
         res.status(500).send('Error fetching payments');
+    }
+});
+
+app.get('/api/bookings', async (req, res) => {
+    try {
+        // Query to get all reservations and rentals
+        const query = `
+        SELECT 
+          r.reservation_id AS id,
+          h.name AS hotel_name,
+          h.address AS location,
+          rm.view AS room_type,
+          r.start_date AS check_in,
+          r.end_date AS check_out,
+          r.status AS status,
+          g.guest_id AS guest_id,
+          COUNT(rm.room_id) AS guests,
+          (rm.price * (r.end_date - r.start_date)) AS total
+        FROM Reservation r
+        JOIN Room rm ON r.room_id = rm.room_id
+        JOIN Hotel h ON rm.hotel_id = h.hotel_id
+        JOIN Guest g ON r.guest_id = g.guest_id
+        GROUP BY r.reservation_id, h.name, h.address, rm.view, rm.price, r.start_date, r.end_date, r.status, g.guest_id
+        UNION
+        SELECT 
+          rt.rental_id AS id,
+          h.name AS hotel_name,
+          h.address AS location,
+          rm.view AS room_type,
+          rt.checkin_date AS check_in,
+          rt.checkout_date AS check_out,
+          'Confirmed' AS status,
+          g.guest_id AS guest_id,
+          COUNT(rm.room_id) AS guests,
+          (rm.price * (rt.checkout_date - rt.checkin_date)) AS total
+        FROM Rental rt
+        JOIN Reservation r ON rt.reservation_id = r.reservation_id
+        JOIN Room rm ON rt.room_id = rm.room_id
+        JOIN Hotel h ON rm.hotel_id = h.hotel_id
+        JOIN Guest g ON rt.guest_id = g.guest_id
+        GROUP BY rt.rental_id, h.name, h.address, rm.view, rm.price, rt.checkin_date, rt.checkout_date, g.guest_id
+      `;
+
+        const result = await client.query(query);
+
+        // Format the data according to the Booking interface
+        const bookings = result.rows.map(row => ({
+            id: row.id.toString(),
+            hotelName: row.hotel_name,
+            location: row.location,
+            roomType: row.room_type,
+            checkIn: row.check_in.toISOString().split('T')[0],  // Format as YYYY-MM-DD
+            checkOut: row.check_out.toISOString().split('T')[0],  // Format as YYYY-MM-DD
+            guests: parseInt(row.guests),
+            total: parseFloat(row.total),
+            status: row.status === 'Cancelled' ? 'Cancelled' : (row.status === 'Checked-in' ? 'Completed' : 'Confirmed'),
+        }));
+
+        res.json(bookings);
+    } catch (err) {
+        console.error('Error fetching bookings:', err);
+        res.status(500).send('Internal Server Error');
     }
 });
 
