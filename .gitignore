@@ -2,6 +2,8 @@
 **/.DS_Store
 .DS_Store
 
+container
+
 # Node.js
 node_modules/
 npm-debug.log
@@ -61,13 +63,6 @@ Thumbs.db
 .env.test.local
 .env.production.local
 .env.example
-
-# TypeScript
-tsconfig.json
-tsconfig.build.json
-tsconfig.paths.json
-tsconfig.prod.json
-tsconfig.test.json
 
 # Build cache
 .cache/

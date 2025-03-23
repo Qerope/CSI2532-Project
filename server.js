@@ -7,7 +7,7 @@ require('dotenv').config();
 
 const app = express();
 const client = new Client({
-    connectionString: process.env.DATABASE_URL || "postgres://root@localhost:5432/hotel",
+    connectionString: process.env.DATABASE_URL || "postgres://root:password@localhost:5432/hotel",
 });
 
 client.connect();
