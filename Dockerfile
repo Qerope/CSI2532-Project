@@ -46,14 +46,13 @@ RUN service postgresql start && \
 RUN npm install -g npm@latest && \
     npm install -g express-generator && \
     npm install
-    
-CMD nohup node /app/CSI2532-Project/server.js
 
-WORKDIR /app/CSI2532-Project/app
+WORKDIR /app/CSI2532-Project/app-v2
 RUN npm install --force
-CMD nohup npm run dev --prefix /app/CSI2532-Project/app
 
 EXPOSE 3000 5010
 
 CMD service postgresql start && \
+    nohup node /app/CSI2532-Project/server.js & \
+    nohup npm run dev --prefix /app/CSI2532-Project/app-v2 & \
     tail -f /dev/null
