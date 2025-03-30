@@ -38,7 +38,7 @@ WORKDIR /app/CSI2532-Project
 
 COPY ./sql /docker-entrypoint-initdb.d/
 RUN service postgresql start && \
-    PGPASSWORD="password" psql -U root -d hotel -f ./sql/database.sql && 
+    PGPASSWORD="password" psql -U root -d hotel -f ./sql/database.sql
 
 RUN npm install -g npm@latest && \
     npm install -g express-generator && \
