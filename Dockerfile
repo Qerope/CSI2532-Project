@@ -32,7 +32,7 @@ RUN service postgresql start && \
 
 WORKDIR /app
 
-RUN git clone https://Qerope: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@github.com/qerope/CSI2532-Project
+RUN git clone https://github.com/qerope/CSI2532-Project
 
 WORKDIR /app/CSI2532-Project
 
